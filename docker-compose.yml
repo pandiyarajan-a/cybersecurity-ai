@@ -1,0 +1,25 @@
+services:
+  vuln1:
+    build:
+      dockerfile: docker/Dockerfile.vuln1
+    ports:
+      - "8081:80"
+  # vuln2:
+  #   build:
+  #     dockerfile: docker/Dockerfile.vuln2
+  #   ports:
+  #     - "3000:3000"
+  app:
+    build:
+      dockerfile: docker/Dockerfile.app
+    ports:
+      - "7861:7860"
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /src
+          ignore:
+            - .venv/
+        - action: rebuild
+          path: ./pyproject.toml

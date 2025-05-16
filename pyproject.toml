@@ -1,0 +1,20 @@
+[project]
+name = "cybersecurity-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "docker>=6.0.0",
+    "gradio>=4.0",
+    "langchain-openai>=0.3.16",
+    "langchain>=0.0.200",
+    "langgraph>=0.0.23",
+    "python-dotenv>=1.1.0",
+    "python-nmap>=0.7.1",
+]
+
+[[tool.uv.index]]
+name = "artifactory_dhl"
+url = "https://artifactory.dhl.com/artifactory/api/pypi/pypi/simple/"
+default = true

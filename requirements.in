@@ -1,0 +1,8 @@
+langchain>=0.0.200
+langchain-openai>=0.3.16
+langgraph>=0.0.23     # LangGraph for agentic workflows ([pypi.org](https://pypi.org/project/langgraph/0.0.23/?utm_source=chatgpt.com))
+gradio>=4.0           # Gradio ChatInterface ([gradio.app](https://www.gradio.app/docs/gradio/chatinterface?utm_source=chatgpt.com))
+docker>=6.0.0         # Python SDK to control Docker
+python-dotenv         # Load environment variables
+# trivy               # CLI scanner for container images
+python-nmap           # Network scanner

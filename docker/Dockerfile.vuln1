@@ -1,0 +1,5 @@
+# Simple vulnerable HTTP server on Ubuntu 18.04
+FROM docker.artifactory.dhl.com/ubuntu:18.04
+RUN apt-get update && apt-get install -y apache2=2.4.29-1ubuntu4
+COPY docker/index.html /var/www/html/index.html
+CMD ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]

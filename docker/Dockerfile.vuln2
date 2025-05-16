@@ -1,0 +1,7 @@
+# Node.js app with outdated dependency
+FROM node:12
+WORKDIR /app
+COPY docker/package.json .
+RUN npm install express@4.16.0
+COPY docker/server.js .
+CMD ["node", "server.js"]
