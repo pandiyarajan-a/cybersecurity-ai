@@ -9,6 +9,15 @@ services:
   #     dockerfile: docker/Dockerfile.vuln2
   #   ports:
   #     - "3000:3000"
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    ports:
+      - 6006:6006  # PHOENIX_PORT
+      - 4317:4317  # PHOENIX_GRPC_PORT
+    environment:
+      - PHOENIX_WORKING_DIR=/mnt/data
+    volumes:
+      - phoenix_data:/mnt/data  
   app:
     build:
       dockerfile: docker/Dockerfile.app
@@ -23,3 +32,6 @@ services:
             - .venv/
         - action: rebuild
           path: ./pyproject.toml
+volumes:
+  phoenix_data:
+    driver: local
