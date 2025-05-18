@@ -13,8 +13,3 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "python-nmap>=0.7.1",
 ]
-
-[[tool.uv.index]]
-name = "artifactory_dhl"
-url = "https://artifactory.dhl.com/artifactory/api/pypi/pypi/simple/"
-default = true
