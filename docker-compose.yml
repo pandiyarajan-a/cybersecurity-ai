@@ -18,6 +18,7 @@ services:
       - PHOENIX_WORKING_DIR=/mnt/data
     volumes:
       - phoenix_data:/mnt/data  
+    restart: always
   app:
     build:
       dockerfile: docker/Dockerfile.app
