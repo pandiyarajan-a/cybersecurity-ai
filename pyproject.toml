@@ -13,6 +13,7 @@ dependencies = [
     "langchain>=0.0.200",
     "langgraph>=0.0.23",
     "openinference-instrumentation-langchain>=0.1.42",
+    "openinference-instrumentation-smolagents>=0.1.11",
     "python-dotenv>=1.1.0",
-    "python-nmap>=0.7.1",
+    "smolagents[gradio,telemetry,toolkit]>=1.16.1",
 ]
