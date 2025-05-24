@@ -63,6 +63,7 @@ Use Case: `Check common open ports`
 message2 = metasploit_prompt + """ 
 run a common port check on 172.18.9.102
 """
+message3 =  metasploit_prompt + "Full reconnaissance scan on 172.18.9.102"
 
-message3 = "Full reconnaissance scan on 172.18.9.102"
+
 vulnscan_agent.run(message3)

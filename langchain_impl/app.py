@@ -2,6 +2,7 @@
 import gradio as gr
 from dotenv import load_dotenv
 load_dotenv()
+
 from graph import GraphBuilder
 
 # configure the Phoenix tracer

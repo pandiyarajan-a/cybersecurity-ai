@@ -7,7 +7,6 @@ requires-python = ">=3.11"
 dependencies = [
     "arize-phoenix-otel>=0.9.2",
     "arize-phoenix[evals]>=9.5.0",
-    "docker>=6.0.0",
     "gradio>=4.0",
     "langchain-openai>=0.3.16",
     "langchain>=0.0.200",
