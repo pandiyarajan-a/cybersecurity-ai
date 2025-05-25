@@ -65,5 +65,7 @@ run a common port check on 172.18.9.102
 """
 message3 =  metasploit_prompt + "Full reconnaissance scan on 172.18.9.102"
 
+message3 =  metasploit_prompt + "run nmap scan on open ports in 172.18.9.102, 172.18.9.105 call function separaty one after other"
+
 
 vulnscan_agent.run(message3)

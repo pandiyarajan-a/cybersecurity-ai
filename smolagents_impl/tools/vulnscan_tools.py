@@ -1,7 +1,5 @@
 from smolagents.tools import tool
-from docker import from_env
 import subprocess
-import docker
 
 # docker_client = from_env()
 
