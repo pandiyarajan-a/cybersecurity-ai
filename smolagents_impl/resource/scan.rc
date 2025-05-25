@@ -1,0 +1,10 @@
+use auxiliary/scanner/portscan/tcp
+set RHOSTS 192.168.0.10
+set PORTS 22,80,443
+run
+
+use auxiliary/scanner/ssh/ssh_version
+set RHOSTS 192.168.0.10
+run
+
+exit
