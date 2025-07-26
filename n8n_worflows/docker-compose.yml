@@ -1,0 +1,55 @@
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: docker/n8n_app.Dockerfile
+    image: n8n-with-docker
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    user: root
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - msf-net
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  vuln-tools:
+    build:
+      context: .
+      dockerfile: docker/vuln_tools.Dockerfile
+    image: vuln-tools
+    container_name: vuln-tools
+    networks:
+      - msf-net
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    container_name: msf-postgres
+    environment:
+      POSTGRES_USER: vuln_scan
+      POSTGRES_PASSWORD: vuln_scan
+      POSTGRES_DB: msf
+    ports:
+      - "5432:5432"
+    networks:
+      - msf-net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  msf-net:
+    external: true
+    name: msf-net
+volumes:
+  postgres_data:
+    external: true
+    name: postgres_data
+  n8n_data:
+    external: true
+    name: n8n_data
