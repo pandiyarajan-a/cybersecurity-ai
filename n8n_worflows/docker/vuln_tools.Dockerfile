@@ -23,7 +23,11 @@ RUN apt clean && rm -rf /var/lib/apt/lists/*
 COPY scripts/connect_msf_postgres.sh /usr/local/bin/connect_msf.sh
 RUN chmod +x /usr/local/bin/connect_msf.sh
 
+RUN mkdir -p ~/.msf4
+COPY scripts/database_conf.yml/ /root/.msf4/database.yml
+
 WORKDIR /root
+
 CMD ["/bin/bash"]
 
 
