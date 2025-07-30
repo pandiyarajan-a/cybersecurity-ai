@@ -1,0 +1,826 @@
+{
+  "name": "cert-in-auto-vuln-scanner_v5",
+  "nodes": [
+    {
+      "parameters": {
+        "command": "=docker run --rm \\\n  -v n8n_data:/data \\\n  vuln-tools \\\nnmap {{ $json.Subnets }} -p 21,22,23,80,443,445,3389,1433,25,135,139,1801,8080 --open -Pn -T4 -oX /data/result.xml\necho {{ $json.Subnets }}"
+      },
+      "name": "nmap_scan",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [
+        -1728,
+        400
+      ],
+      "typeVersion": 1,
+      "id": "6a1fca29-48d7-42f2-b3e2-d783f10a5f76",
+      "executeOnce": false,
+      "notesInFlow": false,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "functionCode": "const ip = $json.ip;\nconst ports = $json.open_ports || [];\nconst subnet = $('for_each_subnets').item.json.Subnets\nconst workspace_name = subnet.replace(/\\./g, '_').replace('/', '_') \n\nreturn ports.map(port => ({\n  json: {\n    ip,\n    port: parseInt(port),  // Ensure number for comparison\n    workspace_name: workspace_name\n  }\n}));"
+      },
+      "name": "generate_open_port_item",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        -832,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "6dd90321-7971-4d03-8f3a-fa543f8a798a",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.port }}",
+                    "rightValue": 21,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "b36c2e7e-10c0-4cd2-9eaf-1b794a3f7212"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "FTP_Branch"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e39144bd-cacd-41b8-ac60-9869388513b6",
+                    "leftValue": "={{ $json.port }}.toString()",
+                    "rightValue": "=22",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SSH_Branch"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0e88979c-ea1a-4b43-8d81-443620f8d0e8",
+                    "leftValue": "={{ $json.port }}.toString()",
+                    "rightValue": "23",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Telnet_Branch"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "df203a5f-9dd1-43c1-91d3-da7f02524830",
+                    "leftValue": "={{ $json.port }}.toString()",
+                    "rightValue": "25",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SMTP_Branch"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ec2f8512-531b-4b64-969f-66bc3a79695a",
+                    "leftValue": "={{ $json.port }}",
+                    "rightValue": 80,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HTTP_Branch"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -608,
+        448
+      ],
+      "id": "699c770a-8104-49a2-a802-3fceb2778cb0",
+      "name": "Switch",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm \\\n  --network msf-net \\\n  -v n8n_data:/home/node/.n8n \\\n  vuln-tools bash -c 'mkdir -p /home/node/.n8n/scans/{{$json.workspace_name}}/ssh && \\\n  echo \"\\n===== Scanning {{$json.ip}} =====\" >> /home/node/.n8n/scans/{{$json.workspace_name}}/ssh/{{$json.ip}}.txt && \\\n  msfconsole -q -x \"workspace {{$json.workspace_name}}; use auxiliary/scanner/ssh/ssh_version; set RHOSTS {{$json.ip}}; run; exit\" \\\n  >> /home/node/.n8n/scans/{{$json.workspace_name}}/ssh/{{$json.ip}}.txt'"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -2400,
+        1328
+      ],
+      "id": "b6435574-152a-422e-8383-96fdd0c494fc",
+      "name": "SSH_Scan"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm \\\n  --network msf-net \\\n  -v n8n_data:/home/node/.n8n \\\n  vuln-tools bash -c 'mkdir -p /home/node/.n8n/scans/{{$json.workspace_name}}/telnet && \\\n  echo \"\\n===== Scanning {{$json.ip}} =====\" >> /home/node/.n8n/scans/{{$json.workspace_name}}/telnet/{{$json.ip}}.txt && \\\n  msfconsole -q -x \"workspace {{$json.workspace_name}}; use auxiliary/scanner/telnet/telnet_version; set RHOSTS {{$json.ip}}; run; exit\" \\\n  >> /home/node/.n8n/scans/{{$json.workspace_name}}/telnet/{{$json.ip}}.txt'"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        496
+      ],
+      "id": "ea6fde6d-13dd-41c2-84d4-83e74ba3faa4",
+      "name": "Telnet_Scan"
+    },
+    {
+      "parameters": {
+        "functionCode": "const output = [];\nconst stdout = $json.stdout;\n\n// 1. Extract last subnet from the output (e.g., 172.17.0.2/24)\nconst cidrMatch = stdout.match(/(\\d{1,3}(?:\\.\\d{1,3}){3}\\/\\d{1,2})/g);\nconst subnet = cidrMatch ? cidrMatch[cidrMatch.length - 1] : null;\n\n// Split by each \"Nmap scan report\" block\nconst hostBlocks = stdout.split(/Nmap scan report for /).slice(1);\n\n\nfor (const block of hostBlocks) {\n  const lines = block.trim().split('\\n');\n\n  const ipMatch = lines[0].match(/\\(?(\\d{1,3}(?:\\.\\d{1,3}){3})\\)?/);\n  if (!ipMatch) continue;\n\n  const ip = ipMatch[1];\n  const open_ports = [];\n  const closed_ports = [];\n\n  for (const line of lines) {\n    const portMatch = line.match(/^(\\d+)\\/tcp\\s+(\\w+)/);\n    if (portMatch) {\n      const port = portMatch[1];\n      const state = portMatch[2];\n      if (state === 'open') open_ports.push(port);\n      else if (state === 'closed') closed_ports.push(port);\n    }\n  }\n\n  output.push({\n    json: {\n      subnet,\n      ip,\n      open_ports,\n      closed_ports\n    }\n  });\n}\n\nreturn output;"
+      },
+      "name": "Check Open ports1",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        -1504,
+        400
+      ],
+      "typeVersion": 1,
+      "id": "5e91fef8-27be-48f1-8c1a-0d4858ea4f85",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3d2f8ada-f9f5-49a9-b24b-243ca8be0372",
+              "leftValue": "={{ $json.open_ports.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        496
+      ],
+      "id": "57d98f31-731b-4cb8-b647-5b244fca24e0",
+      "name": "If",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1056,
+        496
+      ],
+      "id": "db66dc8b-71b6-4a43-a25a-f32099b758a5",
+      "name": "Loop Over Items1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "binaryPropertyName": "Subnets",
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -2176,
+        664
+      ],
+      "id": "a97b4e2f-f867-4cc6-8a35-8bea0a2a9b26",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm --network msf-net -v n8n_data:/home/node/.n8n vuln-tools connect_msf.sh {{ $json.subnet.replace(/\\./g, '_').replace('/', '_') }}    "
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        304
+      ],
+      "id": "cac1be6e-1c15-4282-b4cf-175acefca7dd",
+      "name": "metaspliot_create_ws",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "formTitle": "Vuln Scanner",
+        "formDescription": "Vulnerabilities and get a detailed report",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Subnets",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".xlsx",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a6e92e8-ed43-4383-96e1-4580bd105e15",
+      "name": "Landing Page Url",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -2400,
+        664
+      ],
+      "webhookId": "afe067a5-4878-4c9d-b746-691f77190f54",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/home/node/.n8n/scans/**",
+        "options": {
+          "fileExtension": ".txt"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        64,
+        664
+      ],
+      "id": "de2ab533-3340-4b81-9d84-b6df6c4cd2ba",
+      "name": "Read/Write Files from Disk",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        288,
+        664
+      ],
+      "id": "d8d04d3f-2217-430b-ab2e-af7bea969d66",
+      "name": "all_results"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm \\\n  --network msf-net \\\n  -v n8n_data:/home/node/.n8n \\\n  vuln-tools bash -c 'mkdir -p /home/node/.n8n/scans/{{ $json.workspace_name }}/ftp && \\\n  echo \"\\n===== Scanning {{ $json.ip }} =====\" >> /home/node/.n8n/scans/{{ $json.workspace_name }}/ftp/{{ $json.ip }}.txt && \\\n  msfconsole -q -x \"db_status; workspace {{ $json.workspace_name }}; use auxiliary/scanner/ftp/ftp_version; set RHOSTS {{ $json.ip }}; set RPORT 21; run; exit\" \\\n  >> /home/node/.n8n/scans/{{ $json.workspace_name }}/ftp/{{ $json.ip }}.txt'"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        112
+      ],
+      "id": "7b873e1b-d44b-4b91-a3c2-9d9419fa9794",
+      "name": "FTP_Scan",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm \\\n  -v n8n_data:/home/node/.n8n \\\n  vuln-tools bash -c 'rsf.py -m scanners/autopwn -s target={{ $json.ip }} -x > /home/node/.n8n/autopwn_result.txt'"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        304
+      ],
+      "id": "2cb4f67a-7278-49c4-809c-07877be6330a",
+      "name": "RouterSploit_Scan"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm \\\n  --network msf-net \\\n  -v n8n_data:/home/node/.n8n \\\n  vuln-tools bash -c 'mkdir -p /home/node/.n8n/scans/{{$json.workspace_name}}/smtp && \\\n  echo \"\\n===== Scanning {{$json.ip}} =====\" >> /home/node/.n8n/scans/{{$json.workspace_name}}/smtp/{{$json.ip}}.txt && \\\n  msfconsole -q -x \"workspace {{$json.workspace_name}}; use auxiliary/scanner/smtp/smtp_relay; set RHOSTS {{$json.ip}}; run; exit\" \\\n  >> /home/node/.n8n/scans/{{$json.workspace_name}}/smtp/{{$json.ip}}.txt'"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        688
+      ],
+      "id": "5cc52004-84a0-4d43-af73-841648733610",
+      "name": "SMTP_Scan"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm \\\n  --network msf-net \\\n  -v n8n_data:/home/node/.n8n \\\n  vuln-tools bash -c 'mkdir -p /home/node/.n8n/scans/{{$json.workspace_name}}/http && \\\n  echo \"\\n===== Scanning {{$json.ip}} =====\" >> /home/node/.n8n/scans/{{$json.workspace_name}}/http/{{$json.ip}}.txt && \\\n  msfconsole -q -x \"workspace {{$json.workspace_name}}; use auxiliary/scanner/http/http_version; set RHOSTS {{$json.ip}}; set RPORT 80; run; exit\" \\\n  >> /home/node/.n8n/scans/{{$json.workspace_name}}/http/{{$json.ip}}.txt'"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        880
+      ],
+      "id": "c316e25d-12e3-45c7-888b-ab9902239a6a",
+      "name": "HTTP_Scan",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract the scan details and format them as JSON for Excel report:\n\n{{ $json.data }}",
+        "options": {
+          "systemMessage": "You are a cybersecurity report generator AI. Your task is to extract structured data from raw Metasploit scan output and return it as a JSON object suitable for Excel export.\n\nInstructions:\n1. Parse the scan output.\n2. Identify fields: scan datetime, IP address, port scanned, protocol/service (if known), scan status, vulnerabilities (if any), and workspace.\n3. Output a single valid JSON object like:\n\n{\n  \"Scan Date\": \"2025-07-30\",\n  \"IP Address\": \"172.17.0.1\",\n  \"Port Scanned\": 21,\n  \"Service\": \"FTP\",\n  \"Status\": \"Scan Completed\",\n  \"Vulnerability\": \"None Detected\",\n  \"Workspace\": \"172_17_0_2_24\"\n}\n\n1. If information is not available, use `\"Unknown\"` or `\"None Detected\"` accordingly.\n2. Detect `Service` field based on `Port Scanned` if `Port Scanned` is not empty\n3. If `Scan Date` is not available, fill it with Current datatime, format example `31-07-2025 01:42 AM`, use `Date & Time` tool to get the current datetime, maintain the format for all results as given in example."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        512,
+        664
+      ],
+      "id": "e05f6c3e-0ca2-4796-a61d-ad6e47212897",
+      "name": "AI Agent",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        888
+      ],
+      "id": "6ccf4c2c-f787-47a0-8868-200aa988e6bd",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "MGfsG3uhGSajZhxE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet output = [];\n\nfor (const item of items) {\n  const raw = item.json.output;\n\n  // Remove markdown formatting\n  const cleaned = raw.replace(/```json|```/g, '').trim();\n\n  try {\n    const parsed = JSON.parse(cleaned);\n\n    // If it's an array, push each entry\n    if (Array.isArray(parsed)) {\n      parsed.forEach(entry => {\n        if (typeof entry === 'object') {\n          output.push({ json: entry });\n        }\n      });\n    } \n    // If it's a single object\n    else if (typeof parsed === 'object') {\n      output.push({ json: parsed });\n    }\n  } catch (err) {\n    // Optional: Log or handle malformed JSON\n    console.log('JSON parse error:', err);\n  }\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        664
+      ],
+      "id": "da815dae-8c3a-436a-ae8a-b1102a0c717b",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "binaryPropertyName": "={{ $json }}",
+        "options": {
+          "fileName": "=Scan_Report_{{ $now.toISODate() }}.xlsx"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        664
+      ],
+      "id": "ca8a1069-3ae2-4d18-91d3-d3e9c0f6a749",
+      "name": "Convert to File",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "This tool is used to get current date and time. ",
+        "options": {
+          "includeInputFields": false,
+          "timezone": "=IST"
+        }
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        672,
+        888
+      ],
+      "id": "9aa9c460-7884-467c-bbe3-da3efe932465",
+      "name": "Date & Time",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "### Scanner SSH Auxiliary Modules\n> ssh_login\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2400,
+        1472
+      ],
+      "typeVersion": 1,
+      "id": "95ed5188-b7c2-41c5-bc23-b0650335260a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1952,
+        664
+      ],
+      "id": "85b5b166-d033-4c17-9273-aab4d9175d9f",
+      "name": "for_each_subnets"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        664
+      ],
+      "id": "05fefc24-d2da-4f27-bfbe-1a971b9256e0",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "nmap_scan": {
+      "main": [
+        [
+          {
+            "node": "Check Open ports1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate_open_port_item": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "FTP_Scan",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RouterSploit_Scan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Telnet_Scan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SMTP_Scan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP_Scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Open ports1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "metaspliot_create_ws",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "generate_open_port_item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Landing Page Url": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "all_results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "all_results": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FTP_Scan": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RouterSploit_Scan": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telnet_Scan": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMTP_Scan": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP_Scan": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "for_each_subnets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "for_each_subnets": {
+      "main": [
+        [],
+        [
+          {
+            "node": "nmap_scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dbcefbbf-fb9c-4c4b-a89f-855acc35cd72",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "63aa62629f2cecdb1bc5b5b5595f637467122fec95a5eb28e7b53f376bb957b5"
+  },
+  "id": "5rFfABiSz4DUJuJG",
+  "tags": []
+}
