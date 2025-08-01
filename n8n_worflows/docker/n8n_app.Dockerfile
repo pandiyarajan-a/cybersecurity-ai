@@ -5,7 +5,8 @@ USER root
 # Install Docker CLI using Alpine's package manager
 RUN apk update && apk add docker-cli \
  && addgroup -S docker \
- && adduser node docker
+ && adduser node docker \
+ && rm -rf /var/lib/apt/lists/*
 
 USER node
 
