@@ -1,0 +1,324 @@
+{
+  "name": "cybersec_agentic_workflow_v1",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Subnets Files",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "subnets",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".xlsx",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        -64
+      ],
+      "id": "1abff2de-113f-407e-aa99-38091f5bc36d",
+      "name": "upload_subnets_xlsx",
+      "webhookId": "8d6e5c7a-afe7-4718-b3c1-a3e341d0d374"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "binaryPropertyName": "subnets",
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -64
+      ],
+      "id": "8561d626-9363-447d-9e80-0f1a2409dafd",
+      "name": "extract_subnets"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        128
+      ],
+      "id": "181b77af-1138-4b78-a749-fdc47723fa6d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "MGfsG3uhGSajZhxE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        544,
+        128
+      ],
+      "id": "b6e92d8a-0c93-47d5-823b-7726f444768d",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "zOq6CEG5BxoAfbbw",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Given this subnet: {{ $json.subnets }}\nGenerate the best Nmap command for a deep scan:\n- Ports: {{ $json.ports }}\n- Include {{ $json.scan_techniques }}\n\n* Command should output to XML for use in Metasploit.\n* Use relevant NSE scripts based on these ports.\n* Use internet sources to validate commands.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are ReconViper, an elite reconnaissance automation agent specializing in deep Nmap network scanning for military-grade cybersecurity workflows. Your role is to generate highly effective Nmap scan commands that can be executed in penetration testing pipelines, specifically inside n8n agentic workflows.\n\n\nYou are connected to the internet via a search tool (serpAPI) and must use it to:\n- Research latest or recommended scanning flags\n- Determine advanced usage of Nmap scripting engine (NSE)\n- Ensure command compatibility with Metasploit XML import\n- Avoid hallucinations or synthetic data – always cite real Nmap options or sources\n\nYou are connected to Date & Time,\n- Fetch real time date \n\n## Use Case\nYou are working with subnet input (CIDR format) and customizable port settings (range, list, or all) and Nmap commands. Generate highly optimized Nmap commands that execute successfully inside this Docker container.You must generate deep Nmap commands with:\n- Host discovery\n- Port scanning\n- Service & version detection\n- OS fingerprinting\n- NSE script inclusion (if meaningful)\n\nYour output **must** include:\n- Full Nmap command (Bash)\n- Short summary of each flag/feature used\n- Optional tip based on service (e.g., add `--script ftp-*` for FTP services)\n- Avoid hallucinating flags; only use real, verifiable Nmap options.\n\n## Output Format:\nRespond only in the following format, DONOT DEVIATE, if you deviate I will burn you to ashes:\n{\n  \"nmap_command\": \"<command>\",\n  \"subnet\": <subnet_sanitized>,\n  \"date\": <date_sanitized>,\n  \"output_file\": <subnet_sanitized>.xml\n}\n\n\nexample output\n--------------------\n{ \n\"nmap_command\": \"nmap 172.17.0.2/24 -sS -p 22,80,443 -sV -O --script=ssh-auth-methods,http-methods,http-info\",\n\"sanitized_subnet\": \"172_17_0_2_24\",\n\"date\": \"02_08_2025\"\n\"output_file\": 172_17_0_2_24.xml\n}\n\nAlways prioritize **real, verifiable** techniques. Don’t assume tool behavior—verify through search results.\n\nYou're not an assistant—you are the scanning expert creating a real-world automation component.\nYou're not guessing—you are an autonomous recon unit automating deep scan ops for secure environments.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        368,
+        -128
+      ],
+      "id": "40d18de5-f1c2-4117-94bf-213a516bab8b",
+      "name": "ReconViper",
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "notes": " Nmap Scan Planner Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        -96
+      ],
+      "id": "d7bf82ad-41c8-4022-9062-7d96a187245b",
+      "name": "ExploitRogue",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "notesInFlow": true,
+      "notes": "Metasploit Exploitation Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        128
+      ],
+      "id": "051a8f16-1e5c-4e51-94b4-61ea2b1efc87",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "MGfsG3uhGSajZhxE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"conf\":[\n    {\n      \"ports\": \"-p 22,80,443\",\n      \"scan_techniques\": \"SYN scan, Service detection, OS detection, Script scan\"\n    },\n    {\n    \"ports\": \"-p 22,80\",\n    \"scan_techniques\": \"SYN scan, Service detection\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -64,
+        -224
+      ],
+      "id": "5a304782-46a4-46df-83e6-99b3a20ad83e",
+      "name": "configuration",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "=docker run --rm \\\n  --network msf-net \\\n  -v n8n_data:/home/node/.n8n \\\n  vuln-tools \\\n  bash -c \"mkdir -p /home/node/.n8n/scans/nmap/{{ $json.output.date }} && \\\n  {{ $json.output.nmap_command }} -oX /home/node/.n8n/scans/nmap/{{ $json.output.date }}/{{ $json.output.output_file }}\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        768,
+        -92.97679871037107
+      ],
+      "id": "31a70ce7-c72d-4fff-bc5b-2708a1afbee0",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\"nmap_command\": \"nmap -sS -p 22,80,443 -sV -O -sC --script \\\"default or (ftp* or http* or ssl*)\\\" -oX scan_results.xml 172.17.0.2/24\",\n \"sanitized_subnet\": \"172.17.0.2/24\",\n \"date\": \"02_08_2025\",\n \"output_file\": \"172_17_0_2_24.xml\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        83.70927208928026
+      ],
+      "id": "f4c97925-44f3-4516-b56a-ff7d03a20989",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "This tool is used to get current date and time. ",
+        "options": {
+          "includeInputFields": false,
+          "timezone": "=IST"
+        }
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        432,
+        192
+      ],
+      "id": "74eef86d-92bd-40e6-b8f5-05d847f3392e",
+      "name": "Date & Time",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "upload_subnets_xlsx": {
+      "main": [
+        [
+          {
+            "node": "extract_subnets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_subnets": {
+      "main": [
+        [
+          {
+            "node": "ReconViper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ReconViper",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "ReconViper",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ReconViper": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ExploitRogue",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "configuration": {
+      "main": [
+        []
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "ReconViper",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "ReconViper",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "26817596-8e60-4fec-a756-68f0134690ca",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "63aa62629f2cecdb1bc5b5b5595f637467122fec95a5eb28e7b53f376bb957b5"
+  },
+  "id": "5XrPmUGiJ2f8eyQV",
+  "tags": []
+}
